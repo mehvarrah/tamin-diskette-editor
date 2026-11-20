@@ -1,0 +1,2048 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0f4c81" />
+<title>ویرایشگر دیسکت تأمین اجتماعی</title>
+<style>
+:root {
+  --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+  --border: #e2e8f0; --primary: #0369a1; --primary-dark: #0c4a6e;
+  --accent-bg: #f0f9ff; --danger: #be123c; --danger-bg: #fff1f2;
+  --warn: #b45309; --warn-bg: #fffbeb; --ok: #047857; --ok-bg: #ecfdf5;
+}
+html.dark {
+  --bg: #020617; --card: #0f172a; --text: #f1f5f9; --muted: #94a3b8;
+  --border: #1e293b; --primary: #0284c7; --primary-dark: #075985;
+  --accent-bg: #082f49; --danger: #fb7185; --danger-bg: #4c0519;
+  --warn: #fbbf24; --warn-bg: #451a03; --ok: #34d399; --ok-bg: #064e3b;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Tahoma, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+header { background: #0c4a6e; color: #fff; position: sticky; top: 0; z-index: 20; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.wrap { max-width: 1024px; margin: 0 auto; padding: 12px 16px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.topbar h1 { margin: 0; font-size: 16px; }
+.topbar small { font-size: 11px; color: #bae6fd; display: block; }
+nav { display: flex; gap: 6px; overflow-x: auto; padding-top: 8px; }
+.tab-btn { border: 0; background: transparent; color: #e0f2fe; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; font-family: inherit; }
+.tab-btn.active { background: #fff; color: #0c4a6e; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.btn { border: 0; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-ok { background: #047857; color: #fff; }
+.btn-warn { background: #d97706; color: #fff; }
+.btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
+.btn-ghost { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.badge-ok { background: var(--ok-bg); color: var(--ok); }
+.badge-warn { background: var(--warn-bg); color: var(--warn); }
+.badge-err { background: var(--danger-bg); color: var(--danger); }
+.input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; font-family: inherit; }
+.field-box { padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); }
+.field-box.mod { border-color: var(--primary); background: var(--accent-bg); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.msg { padding: 10px 12px; border-radius: 10px; font-size: 12px; margin-top: 6px; }
+.msg-err { background: var(--danger-bg); color: var(--danger); }
+.msg-warn { background: var(--warn-bg); color: var(--warn); }
+.msg-ok { background: var(--ok-bg); color: var(--ok); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 10px; text-align: right; border-bottom: 1px solid var(--border); }
+th { background: var(--bg); font-size: 12px; color: var(--muted); }
+tr:hover td { background: var(--accent-bg); cursor: pointer; }
+.mobile-only { display: block; } .desktop-only { display: none; }
+@media (min-width: 768px) { .mobile-only { display: none; } .desktop-only { display: block; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>ویرایشگر دیسکت تأمین اجتماعی</h1>
+        <small>Social Security Diskette Editor — آفلاین، باینری و بدون ارسال داده</small>
+      </div>
+      <button class="tab-btn" style="background:rgba(255,255,255,.15)" onclick="toggleDark()">تغییر تم</button>
+    </div>
+    <nav id="nav"></nav>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+
+<script>
+// --- encodingTables.mjs ---
+// Complete Iran System 8-bit character encoding tables (0x80 - 0xFF)
+// Verified against real Social Security DBF files (DSKKAR00.dbf & DSKWOR00.dbf)
+// and standard Iran System specification.
+
+const IRAN_SYSTEM_TO_UNICODE = {
+  0x80: '۰', 0x81: '۱', 0x82: '۲', 0x83: '۳', 0x84: '۴',
+  0x85: '۵', 0x86: '۶', 0x87: '۷', 0x88: '۸', 0x89: '۹',
+  0x8a: '،', 0x8b: 'ـ', 0x8c: '؟', 0x8d: 'آ', 0x8e: 'ئ', 0x8f: 'ء',
+  0x90: 'ا', 0x91: 'ا', 0x92: 'ب', 0x93: 'ب', 0x94: 'پ', 0x95: 'پ',
+  0x96: 'ت', 0x97: 'ت', 0x98: 'ث', 0x99: 'ث', 0x9a: 'ج', 0x9b: 'ج',
+  0x9c: 'چ', 0x9d: 'چ', 0x9e: 'ح', 0x9f: 'ح',
+  0xa0: 'خ', 0xa1: 'خ', 0xa2: 'د', 0xa3: 'ذ', 0xa4: 'ر', 0xa5: 'ز',
+  0xa6: 'ژ', 0xa7: 'س', 0xa8: 'س', 0xa9: 'ش', 0xaa: 'ش', 0xab: 'ص',
+  0xac: 'ص', 0xad: 'ض', 0xae: 'ض', 0xaf: 'ط',
+  0xe0: 'ظ', 0xe1: 'ع', 0xe2: 'ع', 0xe3: 'ع', 0xe4: 'ع',
+  0xe5: 'غ', 0xe6: 'غ', 0xe7: 'غ', 0xe8: 'غ',
+  0xe9: 'ف', 0xea: 'ف', 0xeb: 'ق', 0xec: 'ق',
+  0xed: 'ک', 0xee: 'ک', 0xef: 'گ', 0xf0: 'گ',
+  0xf1: 'ل', 0xf2: 'لا', 0xf3: 'ل',
+  0xf4: 'م', 0xf5: 'م', 0xf6: 'ن', 0xf7: 'ن',
+  0xf8: 'و', 0xf9: 'ه', 0xfa: 'ه', 0xfb: 'ه',
+  0xfc: 'ی', 0xfd: 'ی', 0xfe: 'ی', 0xff: '\u00A0',
+};
+
+// Contextual forms: [isolated, final, initial, medial]
+const PERSIAN_CONTEXTUAL_FORMS = {
+  'آ': [0x8d, 0x8d, 0x8d, 0x8d],
+  'ا': [0x90, 0x91, 0x90, 0x91],
+  'ب': [0x92, 0x92, 0x93, 0x93],
+  'پ': [0x94, 0x94, 0x95, 0x95],
+  'ت': [0x96, 0x96, 0x97, 0x97],
+  'ث': [0x98, 0x98, 0x99, 0x99],
+  'ج': [0x9a, 0x9a, 0x9b, 0x9b],
+  'چ': [0x9c, 0x9c, 0x9d, 0x9d],
+  'ح': [0x9e, 0x9e, 0x9f, 0x9f],
+  'خ': [0xa0, 0xa0, 0xa1, 0xa1],
+  'د': [0xa2, 0xa2, 0xa2, 0xa2],
+  'ذ': [0xa3, 0xa3, 0xa3, 0xa3],
+  'ر': [0xa4, 0xa4, 0xa4, 0xa4],
+  'ز': [0xa5, 0xa5, 0xa5, 0xa5],
+  'ژ': [0xa6, 0xa6, 0xa6, 0xa6],
+  'س': [0xa7, 0xa7, 0xa8, 0xa8],
+  'ش': [0xa9, 0xa9, 0xaa, 0xaa],
+  'ص': [0xab, 0xab, 0xac, 0xac],
+  'ض': [0xad, 0xad, 0xae, 0xae],
+  'ط': [0xaf, 0xaf, 0xaf, 0xaf],
+  'ظ': [0xe0, 0xe0, 0xe0, 0xe0],
+  'ع': [0xe1, 0xe2, 0xe4, 0xe3],
+  'غ': [0xe5, 0xe6, 0xe8, 0xe7],
+  'ف': [0xe9, 0xe9, 0xea, 0xea],
+  'ق': [0xeb, 0xeb, 0xec, 0xec],
+  'ک': [0xed, 0xed, 0xee, 0xee],
+  'گ': [0xef, 0xef, 0xf0, 0xf0],
+  'ل': [0xf1, 0xf1, 0xf3, 0xf3],
+  'م': [0xf4, 0xf4, 0xf5, 0xf5],
+  'ن': [0xf6, 0xf6, 0xf7, 0xf7],
+  'و': [0xf8, 0xf8, 0xf8, 0xf8],
+  'ه': [0xf9, 0xf9, 0xfb, 0xfa],
+  'ی': [0xfd, 0xfc, 0xfe, 0xfe],
+  'ئ': [0x8e, 0x8e, 0x8e, 0x8e],
+  'ء': [0x8f, 0x8f, 0x8f, 0x8f],
+};
+
+// Letters that do not join to the following (left) letter
+const NON_LEFT_JOINERS = new Set([
+  'آ', 'ا', 'د', 'ذ', 'ر', 'ز', 'ژ', 'و', 'ء',
+]);
+
+// Normalize Arabic variants to standard Persian equivalents
+const ARABIC_NORMALIZATION = {
+  'ك': 'ک',
+  'ي': 'ی',
+  'ى': 'ی',
+  'ة': 'ه',
+  'أ': 'ا',
+  'إ': 'ا',
+  'ؤ': 'و',
+  'ۀ': 'ه',
+};
+
+const MIRRORED_BRACKETS = {
+  '(': ')',
+  ')': '(',
+  '[': ']',
+  ']': '[',
+  '{': '}',
+  '}': '{',
+};
+
+const LA_LIGATURE_BYTE = 0xf2;
+
+// --- iranSystemDecoder.mjs ---
+
+function isAsciiAlnum(byte) {
+  return (
+    (byte >= 0x30 && byte <= 0x39) || // 0-9
+    (byte >= 0x41 && byte <= 0x5a) || // A-Z
+    (byte >= 0x61 && byte <= 0x7a)    // a-z
+  );
+}
+
+/**
+ * Decodes a raw DBF field byte slice from Iran System (Visual RTL) to Logical Unicode.
+ * Trims trailing ASCII spaces (0x20) used as fixed-width DBF padding.
+ */
+function decodeIranSystem(rawBytes) {
+  // Trim trailing 0x20 spaces
+  let end = rawBytes.length;
+  while (end > 0 && rawBytes[end - 1] === 0x20) {
+    end--;
+  }
+  if (end === 0) {
+    return { text: '', hasUnsupportedBytes: false, unsupportedBytes: [] };
+  }
+
+  const trimmed = rawBytes.subarray(0, end);
+
+  // Check if pure ASCII (no byte >= 0x80)
+  let hasHighByte = false;
+  for (let i = 0; i < trimmed.length; i++) {
+    if (trimmed[i] >= 0x80) {
+      hasHighByte = true;
+      break;
+    }
+  }
+
+  if (!hasHighByte) {
+    let ascii = '';
+    for (let i = 0; i < trimmed.length; i++) {
+      ascii += String.fromCharCode(trimmed[i]);
+    }
+    return { text: ascii, hasUnsupportedBytes: false, unsupportedBytes: [] };
+  }
+
+  // Visual RTL -> Logical:
+  // Reverse the byte array, while preserving LTR order of contiguous ASCII alphanumeric runs.
+  const unsupportedBytes = [];
+  const reversedTokens = [];
+
+  let i = trimmed.length - 1;
+  while (i >= 0) {
+    const b = trimmed[i];
+
+    // If we hit an ASCII alphanumeric character, collect the full contiguous LTR run
+    if (isAsciiAlnum(b)) {
+      let runStart = i;
+      while (
+        runStart > 0 &&
+        (isAsciiAlnum(trimmed[runStart - 1]) ||
+          ((trimmed[runStart - 1] === 0x2d || trimmed[runStart - 1] === 0x2e || trimmed[runStart - 1] === 0x2f) &&
+            runStart - 1 > 0 &&
+            isAsciiAlnum(trimmed[runStart - 2])))
+      ) {
+        runStart--;
+      }
+      let ltrRun = '';
+      for (let k = runStart; k <= i; k++) {
+        ltrRun += String.fromCharCode(trimmed[k]);
+      }
+      reversedTokens.push(ltrRun);
+      i = runStart - 1;
+      continue;
+    }
+
+    if (b < 0x80) {
+      const ch = String.fromCharCode(b);
+      reversedTokens.push(MIRRORED_BRACKETS[ch] ?? ch);
+    } else {
+      const mapped = IRAN_SYSTEM_TO_UNICODE[b];
+      if (mapped !== undefined) {
+        reversedTokens.push(mapped);
+      } else {
+        unsupportedBytes.push(b);
+        reversedTokens.push('\uFFFD');
+      }
+    }
+    i--;
+  }
+
+  return {
+    text: reversedTokens.join(''),
+    hasUnsupportedBytes: unsupportedBytes.length > 0,
+    unsupportedBytes,
+  };
+}
+
+// --- iranSystemEncoder.mjs ---
+
+
+function isAsciiAlnumChar(ch) {
+  const code = ch.charCodeAt(0);
+  return (
+    (code >= 0x30 && code <= 0x39) ||
+    (code >= 0x41 && code <= 0x5a) ||
+    (code >= 0x61 && code <= 0x7a)
+  );
+}
+
+function normalizePersianText(input) {
+  let out = '';
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    // Strip ZWNJ/ZWJ/directional marks that don't exist in 8-bit Iran System
+    if (ch === '\u200c' || ch === '\u200d' || ch === '\u200e' || ch === '\u200f') {
+      if (ch === '\u200c') out += ' ';
+      continue;
+    }
+    out += ARABIC_NORMALIZATION[ch] ?? ch;
+  }
+  return out;
+}
+
+/**
+ * Encodes Logical Unicode string to Visual RTL Iran System bytes,
+ * padded with 0x20 to `fixedLength` if provided.
+ * Never silently truncates: sets overflow=true and success=false if encoded bytes exceed fixedLength.
+ */
+function encodeIranSystem(text, fixedLength) {
+  const normalized = normalizePersianText(text.trimEnd());
+  const logicalBytes = [];
+
+  // Check if pure ASCII
+  let hasNonAscii = false;
+  for (let i = 0; i < normalized.length; i++) {
+    if (normalized.charCodeAt(i) >= 0x80) {
+      hasNonAscii = true;
+      break;
+    }
+  }
+
+  if (!hasNonAscii) {
+    for (let i = 0; i < normalized.length; i++) {
+      logicalBytes.push(normalized.charCodeAt(i));
+    }
+    return finalizeFixedLength(logicalBytes, fixedLength);
+  }
+
+  // Encode logical segments: Persian characters get contextual forms & are reversed for Visual RTL,
+  // while contiguous ASCII alphanumeric runs keep LTR order inside the visual stream.
+  const visualBytes = [];
+  let i = 0;
+  const n = normalized.length;
+
+  // First build logical byte tokens (each token is either a single RTL byte or an LTR ASCII run)
+  const tokens = [];
+
+  while (i < n) {
+    const ch = normalized[i];
+
+    // Contiguous ASCII alphanumeric run
+    if (isAsciiAlnumChar(ch)) {
+      const run = [];
+      while (
+        i < n &&
+        (isAsciiAlnumChar(normalized[i]) ||
+          ((normalized[i] === '-' || normalized[i] === '.' || normalized[i] === '/') &&
+            i + 1 < n &&
+            isAsciiAlnumChar(normalized[i + 1])))
+      ) {
+        run.push(normalized.charCodeAt(i));
+        i++;
+      }
+      // Push LTR run as-is so when tokens are reversed, LTR run stays LTR!
+      tokens.push(run);
+      continue;
+    }
+
+    // Check 'لا' ligature (ل followed by ا)
+    if (ch === 'ل' && i + 1 < n && normalized[i + 1] === 'ا') {
+      tokens.push([LA_LIGATURE_BYTE]);
+      i += 2;
+      continue;
+    }
+
+    if (PERSIAN_CONTEXTUAL_FORMS[ch]) {
+      const prevChar = i > 0 ? normalized[i - 1] : '';
+      const nextChar = i + 1 < n ? normalized[i + 1] : '';
+
+      const prevJoins =
+        prevChar !== '' &&
+        Boolean(PERSIAN_CONTEXTUAL_FORMS[prevChar]) &&
+        !NON_LEFT_JOINERS.has(prevChar);
+      const nextJoins = nextChar !== '' && Boolean(PERSIAN_CONTEXTUAL_FORMS[nextChar]);
+
+      let formIdx = 0; // isolated
+      if (prevJoins && nextJoins) formIdx = 3; // medial
+      else if (prevJoins && !nextJoins) formIdx = 1; // final
+      else if (!prevJoins && nextJoins) formIdx = 2; // initial
+
+      tokens.push([PERSIAN_CONTEXTUAL_FORMS[ch][formIdx]]);
+      i++;
+      continue;
+    }
+
+    // Persian digits ۰-۹
+    const code = ch.charCodeAt(0);
+    if (code >= 0x06f0 && code <= 0x06f9) {
+      tokens.push([0x80 + (code - 0x06f0)]);
+      i++;
+      continue;
+    }
+
+    if (ch === '،') {
+      tokens.push([0x8a]);
+      i++;
+      continue;
+    }
+    if (ch === 'ـ') {
+      tokens.push([0x8b]);
+      i++;
+      continue;
+    }
+    if (ch === '؟') {
+      tokens.push([0x8c]);
+      i++;
+      continue;
+    }
+    if (ch === '\u00a0') {
+      tokens.push([0xff]);
+      i++;
+      continue;
+    }
+
+    if (code < 0x80) {
+      const mirrored = MIRRORED_BRACKETS[ch] ?? ch;
+      tokens.push([mirrored.charCodeAt(0)]);
+      i++;
+      continue;
+    }
+
+    return {
+      success: false,
+      bytes: new Uint8Array(0),
+      unpaddedLength: 0,
+      overflow: false,
+      error: `کاراکتر «${ch}» در کدگذاری Iran System پشتیبانی نمی‌شود.`,
+    };
+  }
+
+  // Reverse token order for Visual RTL
+  for (let t = tokens.length - 1; t >= 0; t--) {
+    for (const b of tokens[t]) {
+      visualBytes.push(b);
+    }
+  }
+
+  return finalizeFixedLength(visualBytes, fixedLength);
+}
+
+function finalizeFixedLength(rawBytes, fixedLength) {
+  if (fixedLength === undefined) {
+    return {
+      success: true,
+      bytes: new Uint8Array(rawBytes),
+      unpaddedLength: rawBytes.length,
+      overflow: false,
+    };
+  }
+
+  if (rawBytes.length > fixedLength) {
+    return {
+      success: false,
+      bytes: new Uint8Array(0),
+      unpaddedLength: rawBytes.length,
+      overflow: true,
+      error: `طول مقدار (${rawBytes.length} بایت) از ظرفیت مجاز فیلد (${fixedLength} بایت) بیشتر است.`,
+    };
+  }
+
+  const padded = new Uint8Array(fixedLength);
+  padded.fill(0x20);
+  padded.set(rawBytes, 0);
+  return {
+    success: true,
+    bytes: padded,
+    unpaddedLength: rawBytes.length,
+    overflow: false,
+  };
+}
+
+// --- encodingDetector.mjs ---
+
+const CP864_HIGH = {
+  0xa0: '\u00a0', 0xa2: 'آ', 0xa5: 'ا', 0xa8: 'ب', 0xaa: 'ت', 0xab: 'ث',
+  0xac: '،', 0xad: 'ج', 0xae: 'ح', 0xaf: 'خ', 0xc1: 'ء', 0xc2: 'آ',
+  0xc3: 'أ', 0xc4: 'ؤ', 0xc5: 'ع', 0xc6: 'ئ', 0xc7: 'ا', 0xc8: 'ب',
+  0xc9: 'ة', 0xca: 'ت', 0xcb: 'ث', 0xcc: 'ج', 0xcd: 'ح', 0xce: 'خ',
+  0xcf: 'د', 0xd0: 'ذ', 0xd1: 'ر', 0xd2: 'ز', 0xd3: 'س', 0xd4: 'ش',
+  0xd5: 'ص', 0xd6: 'ض', 0xd7: 'ط', 0xd8: 'ظ', 0xd9: 'ع', 0xda: 'غ',
+  0xe1: 'ف', 0xe2: 'ق', 0xe3: 'ک', 0xe4: 'ل', 0xe5: 'م', 0xe6: 'ن',
+  0xe7: 'ه', 0xe8: 'و', 0xe9: 'ی', 0xea: 'ی',
+};
+
+function countPersianChars(text) {
+  let count = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if ((c >= 0x0600 && c <= 0x06ff) || c === 0x200c) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function decodeWindows1256Sample(samples) {
+  try {
+    const dec = new TextDecoder('windows-1256');
+    const joined = samples.map((s) => dec.decode(s).trim()).filter(Boolean).slice(0, 3).join(' | ');
+    return { text: joined, invalid: 0 };
+  } catch {
+    return { text: '', invalid: samples.length };
+  }
+}
+
+function decodeCp864Sample(samples) {
+  let invalid = 0;
+  const parts = [];
+  for (const s of samples.slice(0, 3)) {
+    let str = '';
+    for (let i = 0; i < s.length; i++) {
+      const b = s[i];
+      if (b < 0x80) str += String.fromCharCode(b);
+      else if (CP864_HIGH[b]) str += CP864_HIGH[b];
+      else {
+        invalid++;
+        str += '';
+      }
+    }
+    if (str.trim()) parts.push(str.trim());
+  }
+  return { text: parts.join(' | '), invalid };
+}
+
+/**
+ * Empirically detects the encoding of non-ASCII text fields in a DBF file.
+ * Does NOT trust LDID alone — compares Iran System, Windows-1256, and CP864.
+ */
+function detectDbfEncoding(samples, ldidByte) {
+  const nonAsciiSamples = samples.filter((s) => s.some((b) => b >= 0x80));
+
+  if (nonAsciiSamples.length === 0) {
+    return {
+      detected: 'ascii-only',
+      confidence: 'verified',
+      ldidByte,
+      candidates: [],
+      notes: 'هیچ کاراکتر غیر-ASCII در نمونه‌ها یافت نشد.',
+    };
+  }
+
+  // 1. Iran System
+  let isInvalid = 0;
+  let isPersian = 0;
+  const isSamples = [];
+  for (const s of nonAsciiSamples) {
+    const res = decodeIranSystem(s);
+    isInvalid += res.unsupportedBytes.length;
+    isPersian += countPersianChars(res.text);
+    if (isSamples.length < 3 && res.text) isSamples.push(res.text);
+  }
+  const iranSystemScore = {
+    encoding: 'iran-system',
+    label: 'Iran System (Visual RTL)',
+    persianCharCount: isPersian,
+    invalidByteCount: isInvalid,
+    sampleDecoded: isSamples.join(' | '),
+    score: isPersian * 2 - isInvalid * 10,
+  };
+
+  // 2. Windows-1256
+  const w1256 = decodeWindows1256Sample(nonAsciiSamples);
+  // Note: Windows-1256 maps 0x80-0x9F to Euro/punctuation/Latin symbols, whereas Iran System uses 0x80-0x9F heavily for Persian digits and letters (ا ب پ ت ث ج چ ح).
+  let w1256HighRangeCount = 0;
+  for (const s of nonAsciiSamples) {
+    for (const b of s) {
+      if (b >= 0x80 && b <= 0x9f) w1256HighRangeCount++;
+    }
+  }
+  const w1256Persian = countPersianChars(w1256.text);
+  const w1256Score = {
+    encoding: 'windows-1256',
+    label: 'Windows-1256',
+    persianCharCount: w1256Persian,
+    invalidByteCount: w1256HighRangeCount,
+    sampleDecoded: w1256.text,
+    score: w1256Persian - w1256HighRangeCount * 3,
+  };
+
+  // 3. CP864
+  const cp864 = decodeCp864Sample(nonAsciiSamples);
+  const cp864Persian = countPersianChars(cp864.text);
+  const cp864Score = {
+    encoding: 'cp864',
+    label: 'IBM CP864',
+    persianCharCount: cp864Persian,
+    invalidByteCount: cp864.invalid,
+    sampleDecoded: cp864.text,
+    score: cp864Persian - cp864.invalid * 5,
+  };
+
+  const candidates = [iranSystemScore, w1256Score, cp864Score].sort((a, b) => b.score - a.score);
+  const best = candidates[0];
+
+  if (best.encoding === 'iran-system' && isInvalid === 0 && isPersian > 0) {
+    return {
+      detected: 'iran-system',
+      confidence: 'verified',
+      ldidByte,
+      candidates,
+      notes: `کدگذاری Iran System با اطمینان کامل تأیید شد (LDID هدر: 0x${ldidByte.toString(16).toUpperCase().padStart(2, '0')}، صفر بایت نامعتبر در ${nonAsciiSamples.length} فیلد فارسی).`,
+    };
+  }
+
+  return {
+    detected: 'unknown',
+    confidence: 'unsupported',
+    ldidByte,
+    candidates,
+    notes: 'کدگذاری متن فارسی با اطمینان تأیید نشد؛ ویرایش فیلدهای فارسی غیرفعال است.',
+  };
+}
+
+// --- encodingTests.mjs ---
+
+function runEncodingSelfTests() {
+  const cases = [
+    { name: 'نام و نام خانوادگی فارسی رایج', input: 'سیدیعقوب آراسته فر' },
+    { name: 'حروف ویژه فارسی (پ چ ژ گ)', input: 'پژمان چگینی گودرزی' },
+    { name: 'ترکیب لیگچر لا', input: 'بنیاد مسکن انقلاب اسلامی ملایر فلاح' },
+    { name: 'فاصله و علائم نگارشی و پرانتز', input: 'نگهبان (۱)' },
+    { name: 'اعداد فارسی و انگلیسی', input: 'کارگر ساده ۱ کد 123' },
+    { name: 'متن ترکیبی فارسی و لاتین', input: 'اپراتور CNC مدل 2024' },
+    { name: 'شهر خمین و اراک', input: 'خمین - اراک' },
+  ];
+
+  return cases.map((c) => {
+    const encoded = encodeIranSystem(c.input);
+    if (!encoded.success) {
+      return {
+        name: c.name,
+        passed: false,
+        input: c.input,
+        actual: encoded.error ?? 'خطای Encode',
+      };
+    }
+    const decoded = decodeIranSystem(encoded.bytes);
+    const passed = !decoded.hasUnsupportedBytes && decoded.text === c.input;
+    return {
+      name: c.name,
+      passed,
+      input: c.input,
+      actual: decoded.text,
+      expected: c.input,
+      details: `${encoded.bytes.length} بایت`,
+    };
+  });
+}
+
+// --- nationalCode.mjs ---
+
+/**
+ * Validates Iranian 10-digit National Code (کد ملی) preserving leading zeros.
+ * Rejects all-same-digit codes (e.g., 0000000000, 1111111111) and verifies check digit.
+ */
+function validateIranianNationalCode(raw) {
+  const code = raw.trim();
+  if (code.length === 0) {
+    return { valid: false, error: 'کد ملی نمی‌تواند خالی باشد.' };
+  }
+  if (!/^\d{10}$/.test(code)) {
+    return { valid: false, error: 'کد ملی باید دقیقاً ۱۰ رقم انگلیسی (با حفظ صفرهای ابتدایی) باشد.' };
+  }
+  if (/^(\d)\1{9}$/.test(code)) {
+    return { valid: false, error: 'کد ملی با ارقام تکراری معتبر نیست.' };
+  }
+
+  const check = parseInt(code[9], 10);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(code[i], 10) * (10 - i);
+  }
+  const rem = sum % 11;
+  const expected = rem < 2 ? rem : 11 - rem;
+
+  if (check !== expected) {
+    return { valid: false, error: 'رقم کنترل کد ملی (رقم دهم) نامعتبر است.' };
+  }
+
+  return { valid: true };
+}
+
+// --- dateUtils.mjs ---
+
+/**
+ * Validates Jalali date formats used in Social Security DBF files:
+ * Supports YY/MM/DD (8 chars, e.g. 55/10/02) and YYYYMMDD (8 chars, e.g. 13551002) or YYYY/MM/DD.
+ * Does NOT auto-modify the underlying format.
+ */
+function isValidJalaliDateStructure(raw) {
+  const val = raw.trim();
+  if (val === '' || val === '0') {
+    return { valid: true };
+  }
+
+  // Format 1: YY/MM/DD (observed in DSKWOR00.dbf DSW_BDATE, e.g. 55/10/02)
+  const slashShort = /^(\d{2})\/(\d{2})\/(\d{2})$/.exec(val);
+  if (slashShort) {
+    const mm = parseInt(slashShort[2], 10);
+    const dd = parseInt(slashShort[3], 10);
+    return checkMonthDay(mm, dd);
+  }
+
+  // Format 2: YYYY/MM/DD
+  const slashLong = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(val);
+  if (slashLong) {
+    const mm = parseInt(slashLong[2], 10);
+    const dd = parseInt(slashLong[3], 10);
+    return checkMonthDay(mm, dd);
+  }
+
+  // Format 3: YYYYMMDD (8 digits)
+  const compact = /^(\d{4})(\d{2})(\d{2})$/.exec(val);
+  if (compact) {
+    const mm = parseInt(compact[2], 10);
+    const dd = parseInt(compact[3], 10);
+    return checkMonthDay(mm, dd);
+  }
+
+  return {
+    valid: false,
+    error: 'فرمت تاریخ باید مطابق ساختار فایل (مثلاً 55/10/02 یا 13551002) باشد.',
+  };
+}
+
+function checkMonthDay(mm, dd) {
+  if (mm < 1 || mm > 12) {
+    return { valid: false, error: `ماه تاریخ (${mm}) باید بین ۰۱ تا ۱۲ باشد.` };
+  }
+  const maxDay = mm <= 6 ? 31 : 30;
+  if (dd < 1 || dd > maxDay) {
+    return { valid: false, error: `روز تاریخ (${dd}) برای ماه ${mm} معتبر نیست.` };
+  }
+  return { valid: true };
+}
+
+// --- numberUtils.mjs ---
+const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+
+function toEnglishDigits(input) {
+  let out = '';
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    const pIdx = PERSIAN_DIGITS.indexOf(ch);
+    if (pIdx !== -1) {
+      out += String(pIdx);
+      continue;
+    }
+    const aIdx = ARABIC_DIGITS.indexOf(ch);
+    if (aIdx !== -1) {
+      out += String(aIdx);
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+function formatNumberFa(val) {
+  const num = typeof val === 'number' ? val : Number(String(val).trim());
+  if (Number.isNaN(num) || String(val).trim() === '') return String(val);
+  return num.toLocaleString('fa-IR');
+}
+
+function formatBytesFa(bytes) {
+  if (bytes < 1024) return `${bytes} بایت`;
+  const kb = bytes / 1024;
+  return `${kb.toFixed(1)} کیلوبایت`;
+}
+
+// --- zipBuilder.mjs ---
+// Pure TypeScript client-side ZIP builder (STORE method 0, standard CRC-32)
+// Preserves exact filenames (e.g. DSKWOR00.dbf, DSKKAR00.dbf) with zero external dependencies.
+
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    }
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) {
+    c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  }
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+
+function createZipArchive(entries) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+
+  const now = new Date();
+  const dosTime =
+    ((now.getHours() & 0x1f) << 11) |
+    ((now.getMinutes() & 0x3f) << 5) |
+    ((now.getSeconds() >> 1) & 0x1f);
+  const dosDate =
+    (((Math.max(1980, now.getFullYear()) - 1980) & 0x7f) << 9) |
+    (((now.getMonth() + 1) & 0x0f) << 5) |
+    (now.getDate() & 0x1f);
+
+  for (const entry of entries) {
+    const nameBytes = encoder.encode(entry.fileName);
+    const crc = crc32(entry.data);
+    const size = entry.data.length;
+
+    // Local file header (30 bytes + filename)
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(localHeader.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true); // version needed
+    lv.setUint16(6, 0x0800, true); // UTF-8 flag
+    lv.setUint16(8, 0, true); // compression: STORE
+    lv.setUint16(10, dosTime, true);
+    lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, size, true);
+    lv.setUint32(22, size, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    localHeader.set(nameBytes, 30);
+
+    localParts.push(localHeader, entry.data);
+
+    // Central directory header (46 bytes + filename)
+    const central = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(central.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true);
+    cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, size, true);
+    cv.setUint32(24, size, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    central.set(nameBytes, 46);
+
+    centralParts.push(central);
+    offset += localHeader.length + size;
+  }
+
+  let centralSize = 0;
+  for (const c of centralParts) centralSize += c.length;
+
+  const endRecord = new Uint8Array(22);
+  const ev = new DataView(endRecord.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(4, 0, true);
+  ev.setUint16(6, 0, true);
+  ev.setUint16(8, entries.length, true);
+  ev.setUint16(10, entries.length, true);
+  ev.setUint32(12, centralSize, true);
+  ev.setUint32(16, offset, true);
+  ev.setUint16(20, 0, true);
+
+  const totalSize = offset + centralSize + endRecord.length;
+  const out = new Uint8Array(totalSize);
+  let cursor = 0;
+  for (const p of localParts) {
+    out.set(p, cursor);
+    cursor += p.length;
+  }
+  for (const c of centralParts) {
+    out.set(c, cursor);
+    cursor += c.length;
+  }
+  out.set(endRecord, cursor);
+
+  return out;
+}
+
+// --- dbfMetadata.mjs ---
+
+const DSKWOR_SEMANTICS = {
+  DSW_ID: { labelFa: 'کد کارگاه', group: 'job', isIdentifier: true },
+  DSW_YY: { labelFa: 'سال لیست', group: 'job' },
+  DSW_MM: { labelFa: 'ماه لیست', group: 'job' },
+  DSW_LISTNO: { labelFa: 'شماره لیست', group: 'job', isIdentifier: true },
+  DSW_ID1: { labelFa: 'شماره بیمه', group: 'identity', isIdentifier: true },
+  DSW_FNAME: { labelFa: 'نام', group: 'identity' },
+  DSW_LNAME: { labelFa: 'نام خانوادگی', group: 'identity' },
+  DSW_DNAME: { labelFa: 'نام پدر', group: 'identity' },
+  DSW_IDNO: { labelFa: 'شماره شناسنامه', group: 'identity', isIdentifier: true },
+  DSW_IDPLC: { labelFa: 'محل صدور شناسنامه', group: 'identity' },
+  DSW_IDATE: { labelFa: 'تاریخ صدور شناسنامه', group: 'identity', isDate: true },
+  DSW_BDATE: { labelFa: 'تاریخ تولد', group: 'identity', isDate: true },
+  DSW_SEX: { labelFa: 'جنسیت', group: 'identity' },
+  DSW_NAT: { labelFa: 'ملیت', group: 'identity' },
+  DSW_OCP: { labelFa: 'عنوان شغل', group: 'job' },
+  DSW_SDATE: { labelFa: 'تاریخ شروع به کار', group: 'job', isDate: true },
+  DSW_EDATE: { labelFa: 'تاریخ ترک کار', group: 'job', isDate: true },
+  DSW_DD: { labelFa: 'روز کارکرد', group: 'wage' },
+  DSW_ROOZ: { labelFa: 'دستمزد روزانه', group: 'wage' },
+  DSW_MAH: { labelFa: 'دستمزد ماهانه', group: 'wage' },
+  DSW_MAZ: { labelFa: 'مزایای ماهانه مشمول', group: 'wage' },
+  DSW_MASH: { labelFa: 'دستمزد و مزایای مشمول', group: 'wage' },
+  DSW_TOTL: { labelFa: 'جمع کل حقوق و مزایا', group: 'wage' },
+  DSW_BIME: { labelFa: 'حق بیمه سهم بیمه‌شده', group: 'wage' },
+  DSW_PRATE: { labelFa: 'نرخ پورسانت / سختی کار', group: 'wage' },
+  DSW_JOB: { labelFa: 'کد شغل', group: 'job', isIdentifier: true },
+  PER_NATCOD: { labelFa: 'کد ملی', group: 'identity', isNationalCode: true, isIdentifier: true },
+  DSW_INC: { labelFa: 'پایه سنوات / افزایش', group: 'wage' },
+  DSW_SPOUSE: { labelFa: 'حق عائله‌مندی / سایر', group: 'wage' },
+};
+
+const DSKKAR_SEMANTICS = {
+  DSK_ID: { labelFa: 'کد کارگاه', group: 'workshop_info', isIdentifier: true },
+  DSK_NAME: { labelFa: 'نام کارگاه', group: 'workshop_info' },
+  DSK_FARM: { labelFa: 'نام کارفرما / پیمانکار', group: 'workshop_info' },
+  DSK_ADRS: { labelFa: 'نشانی کارگاه', group: 'workshop_info' },
+  DSK_KIND: { labelFa: 'نوع لیست', group: 'workshop_info' },
+  DSK_YY: { labelFa: 'سال لیست', group: 'workshop_info' },
+  DSK_MM: { labelFa: 'ماه لیست', group: 'workshop_info' },
+  DSK_LISTNO: { labelFa: 'شماره لیست', group: 'workshop_info', isIdentifier: true },
+  DSK_DISC: { labelFa: 'توضیحات لیست', group: 'workshop_info' },
+  DSK_NUM: { labelFa: 'تعداد بیمه‌شدگان', group: 'workshop_totals', isComputedWarning: true },
+  DSK_TDD: { labelFa: 'جمع روزهای کارکرد', group: 'workshop_totals', isComputedWarning: true },
+  DSK_TROOZ: { labelFa: 'جمع دستمزد روزانه', group: 'workshop_totals', isComputedWarning: true },
+  DSK_TMAH: { labelFa: 'جمع دستمزد ماهانه', group: 'workshop_totals', isComputedWarning: true },
+  DSK_TMAZ: { labelFa: 'جمع مزایای مشمول', group: 'workshop_totals', isComputedWarning: true },
+  DSK_TMASH: { labelFa: 'جمع کل دستمزد و مزایای مشمول', group: 'workshop_totals', isComputedWarning: true },
+  DSK_TTOTL: { labelFa: 'جمع کل حقوق و مزایا', group: 'workshop_totals', isComputedWarning: true },
+  DSK_TBIME: { labelFa: 'جمع حق بیمه سهم بیمه‌شده', group: 'workshop_totals', isComputedWarning: true },
+  DSK_TKOSO: { labelFa: 'جمع حق بیمه سهم کارفرما', group: 'workshop_totals', isComputedWarning: true },
+  DSK_BIC: { labelFa: 'جمع حق بیمه بیکاری', group: 'workshop_totals', isComputedWarning: true },
+  DSK_RATE: { labelFa: 'نرخ حق بیمه کارگاه', group: 'workshop_info' },
+  DSK_PRATE: { labelFa: 'نرخ مشاغل سخت', group: 'workshop_info' },
+  DSK_BIMH: { labelFa: 'سایر کسورات / حق بیمه', group: 'workshop_totals', isComputedWarning: true },
+  MON_PYM: { labelFa: 'ردیف پیمان', group: 'workshop_info', isIdentifier: true },
+  DSK_INC: { labelFa: 'جمع پایه سنوات / افزایش', group: 'workshop_totals', isComputedWarning: true },
+  DSK_SPOUSE: { labelFa: 'جمع حق عائله‌مندی / سایر', group: 'workshop_totals', isComputedWarning: true },
+};
+
+function inferFileRole(fileName, fieldNames) {
+  const upper = fileName.toUpperCase();
+  if (upper.includes('DSKWOR') || fieldNames.includes('PER_NATCOD') || fieldNames.includes('DSW_FNAME')) {
+    return 'DSKWOR00';
+  }
+  if (upper.includes('DSKKAR') || fieldNames.includes('DSK_NAME') || fieldNames.includes('DSK_FARM')) {
+    return 'DSKKAR00';
+  }
+  return 'UNKNOWN';
+}
+
+function getFieldSemanticInfo(fieldName, role) {
+  if (role === 'DSKWOR00' && DSKWOR_SEMANTICS[fieldName]) {
+    return DSKWOR_SEMANTICS[fieldName];
+  }
+  if (role === 'DSKKAR00' && DSKKAR_SEMANTICS[fieldName]) {
+    return DSKKAR_SEMANTICS[fieldName];
+  }
+  return DSKWOR_SEMANTICS[fieldName] ?? DSKKAR_SEMANTICS[fieldName] ?? {
+    labelFa: fieldName,
+    group: 'other',
+  };
+}
+
+// --- dbfParser.mjs ---
+
+const DBF_VERSION_LABELS = {
+  0x02: 'FoxBASE',
+  0x03: 'dBASE III (بدون Memo)',
+  0x04: 'dBASE IV',
+  0x05: 'dBASE V',
+  0x30: 'Visual FoxPro',
+  0x83: 'dBASE III + Memo',
+  0x8b: 'dBASE IV + Memo',
+};
+
+function parseDbfBuffer(buffer, fileName) {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  const warnings = [];
+
+  if (bytes.length < 32) {
+    throw new Error('فایل نامعتبر یا ناقص است: طول فایل کمتر از ۳۲ بایت هدر استاندارد DBF می‌باشد.');
+  }
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const version = bytes[0];
+  const lastUpdateYear = 1900 + bytes[1];
+  const lastUpdateMonth = bytes[2];
+  const lastUpdateDay = bytes[3];
+  const recordCount = view.getUint32(4, true);
+  const headerLength = view.getUint16(8, true);
+  const recordLength = view.getUint16(10, true);
+  const reservedBytes = bytes.slice(12, 32);
+  const languageDriverId = bytes[29];
+
+  if (headerLength < 33 || headerLength > bytes.length) {
+    throw new Error(
+      `هدر فایل خراب است: طول هدر (${headerLength} بایت) با اندازه فایل (${bytes.length} بایت) همخوانی ندارد.`
+    );
+  }
+
+  if (recordLength < 2) {
+    throw new Error(`طول رکورد نامعتبر است (${recordLength} بایت).`);
+  }
+
+  // Parse Field Descriptors starting at byte 32
+  const fields = [];
+  let pos = 32;
+  let recordOffset = 1; // byte 0 is delete flag
+
+  while (pos + 32 <= headerLength && bytes[pos] !== 0x0d) {
+    const nameBytes = bytes.subarray(pos, pos + 11);
+    let nameEnd = 0;
+    while (nameEnd < nameBytes.length && nameBytes[nameEnd] !== 0x00) {
+      nameEnd++;
+    }
+    let name = '';
+    for (let k = 0; k < nameEnd; k++) {
+      name += String.fromCharCode(nameBytes[k]);
+    }
+    name = name.trim();
+
+    const type = String.fromCharCode(bytes[pos + 11]);
+    const length = bytes[pos + 16];
+    const decimalCount = bytes[pos + 17];
+
+    if (length === 0) {
+      warnings.push(`فیلد ${name} دارای طول صفر است.`);
+    }
+
+    fields.push({
+      index: fields.length,
+      name,
+      type,
+      length,
+      decimalCount,
+      recordOffset,
+      absoluteOffsetRec0: headerLength + recordOffset,
+    });
+
+    recordOffset += length;
+    pos += 32;
+  }
+
+  const headerTerminatorOffset = pos;
+  if (bytes[pos] !== 0x0d) {
+    warnings.push(`نشانگر پایان هدر (0x0D) در بایت ${pos} یافت نشد.`);
+  }
+
+  if (recordOffset !== recordLength) {
+    warnings.push(
+      `مجموع طول فیلدها (${recordOffset} بایت) با طول رکورد ثبت‌شده در هدر (${recordLength} بایت) تفاوت دارد.`
+    );
+  }
+
+  const expectedDataEndOffset = headerLength + recordCount * recordLength;
+  if (expectedDataEndOffset > bytes.length) {
+    throw new Error(
+      `فایل ناقص یا بریده‌شده است: انتظار می‌رفت حداقل ${expectedDataEndOffset} بایت داده وجود داشته باشد، اما اندازه فایل ${bytes.length} بایت است.`
+    );
+  }
+
+  const trailingBytes = bytes.slice(expectedDataEndOffset);
+  const hasEofMarker = trailingBytes.length > 0 && trailingBytes[0] === 0x1a;
+  if (trailingBytes.length > 1 || (trailingBytes.length === 1 && !hasEofMarker)) {
+    warnings.push(
+      `${trailingBytes.length} بایت اضافی پس از رکوردها وجود دارد که در ذخیره بدون تغییر حفظ خواهند شد.`
+    );
+  }
+
+  const role = inferFileRole(
+    fileName,
+    fields.map((f) => f.name)
+  );
+
+  // Sample non-ASCII Character fields for empirical encoding detection
+  const textSamples = [];
+  for (let r = 0; r < Math.min(recordCount, 20); r++) {
+    const recStart = headerLength + r * recordLength;
+    for (const f of fields) {
+      if (f.type === 'C') {
+        const raw = bytes.subarray(recStart + f.recordOffset, recStart + f.recordOffset + f.length);
+        if (raw.some((b) => b >= 0x80)) {
+          textSamples.push(raw);
+        }
+      }
+    }
+  }
+
+  const encodingDetection = detectDbfEncoding(textSamples, languageDriverId);
+  if (encodingDetection.confidence !== 'verified') {
+    warnings.push(encodingDetection.notes);
+  }
+
+  // Parse all records
+  const records = [];
+  for (let r = 0; r < recordCount; r++) {
+    const absRecStart = headerLength + r * recordLength;
+    const deleteFlag = bytes[absRecStart];
+    const isDeleted = deleteFlag === 0x2a; // '*'
+
+    const recFields = {};
+    const fieldOrder = [];
+
+    for (const f of fields) {
+      const start = absRecStart + f.recordOffset;
+      const rawSlice = bytes.slice(start, start + f.length);
+      let decodedValue = '';
+
+      if (f.type === 'N' || f.type === 'F') {
+        let str = '';
+        for (let i = 0; i < rawSlice.length; i++) {
+          str += String.fromCharCode(rawSlice[i]);
+        }
+        decodedValue = str.trim();
+      } else {
+        if (encodingDetection.detected === 'iran-system' || encodingDetection.detected === 'ascii-only') {
+          decodedValue = decodeIranSystem(rawSlice).text;
+        } else {
+          // Fallback: ASCII only, keep high bytes safe
+          let str = '';
+          for (let i = 0; i < rawSlice.length; i++) {
+            str += rawSlice[i] < 0x80 ? String.fromCharCode(rawSlice[i]) : '?';
+          }
+          decodedValue = str.trimEnd();
+        }
+      }
+
+      recFields[f.name] = {
+        descriptor: f,
+        semantic: getFieldSemanticInfo(f.name, role),
+        originalRawBytes: rawSlice,
+        decodedValue,
+        modifiedValue: null,
+        isModified: false,
+      };
+      fieldOrder.push(f.name);
+    }
+
+    records.push({
+      recordIndex: r,
+      absoluteOffset: absRecStart,
+      deleteFlag,
+      isDeleted,
+      fields: recFields,
+      fieldOrder,
+    });
+  }
+
+  const header = {
+    version,
+    versionLabel: DBF_VERSION_LABELS[version] ?? `نسخه ناشناخته (0x${version.toString(16)})`,
+    lastUpdateYear,
+    lastUpdateMonth,
+    lastUpdateDay,
+    recordCount,
+    headerLength,
+    recordLength,
+    languageDriverId,
+    reservedBytes,
+    headerTerminatorOffset,
+    expectedDataEndOffset,
+    totalFileSize: bytes.length,
+    hasEofMarker,
+    trailingBytesLength: trailingBytes.length,
+    trailingBytes,
+  };
+
+  return {
+    fileName,
+    fileRole: role,
+    originalBuffer: bytes.slice(), // independent copy
+    header,
+    fields,
+    records,
+    encoding:
+      encodingDetection.detected === 'iran-system'
+        ? 'iran-system'
+        : encodingDetection.detected === 'ascii-only'
+        ? 'ascii-only'
+        : 'unknown',
+    encodingConfidence: encodingDetection.confidence,
+    encodingNotes: encodingDetection.notes,
+    parseWarnings: warnings,
+  };
+}
+
+// --- dbfBinaryEditor.mjs ---
+
+
+/**
+ * Encodes a single field value according to its DBF field type and fixed length.
+ * Never silently truncates; returns error on overflow or invalid encoding.
+ */
+function encodeFieldValue(
+  value,
+  descriptor,
+  allowPersianEncoding
+) {
+  const len = descriptor.length;
+
+  if (descriptor.type === 'N' || descriptor.type === 'F') {
+    const trimmed = value.trim();
+    // Validate strictly ASCII digits (and optional decimal point / minus)
+    if (trimmed !== '' && !/^-?\d+(\.\d+)?$/.test(trimmed)) {
+      return {
+        success: false,
+        bytes: new Uint8Array(0),
+        error: `فیلد عددی «${descriptor.name}» فقط باید شامل ارقام انگلیسی باشد.`,
+      };
+    }
+
+    if (descriptor.decimalCount > 0 && trimmed !== '' && trimmed.includes('.')) {
+      const parts = trimmed.split('.');
+      if (parts[1].length > descriptor.decimalCount) {
+        return {
+          success: false,
+          bytes: new Uint8Array(0),
+          error: `تعداد اعشار فیلد «${descriptor.name}» بیش از حد مجاز (${descriptor.decimalCount}) است.`,
+        };
+      }
+    }
+
+    if (trimmed.length > len) {
+      return {
+        success: false,
+        bytes: new Uint8Array(0),
+        error: `سرریز طول در فیلد عددی «${descriptor.name}»: طول ${trimmed.length} بیشتر از ظرفیت ${len} است.`,
+      };
+    }
+
+    // DBF Numeric fields are Right-Aligned with leading ASCII spaces (0x20)
+    const out = new Uint8Array(len);
+    out.fill(0x20);
+    const startOffset = len - trimmed.length;
+    for (let i = 0; i < trimmed.length; i++) {
+      out[startOffset + i] = trimmed.charCodeAt(i);
+    }
+    return { success: true, bytes: out };
+  }
+
+  // Character ('C') or Date ('D') field
+  let hasNonAscii = false;
+  for (let i = 0; i < value.length; i++) {
+    if (value.charCodeAt(i) >= 0x80) {
+      hasNonAscii = true;
+      break;
+    }
+  }
+
+  if (hasNonAscii && !allowPersianEncoding) {
+    return {
+      success: false,
+      bytes: new Uint8Array(0),
+      error: `ویرایش متن فارسی به دلیل تأیید نشدن کدگذاری فایل غیرفعال است.`,
+    };
+  }
+
+  const encoded = encodeIranSystem(value, len);
+  if (!encoded.success) {
+    return {
+      success: false,
+      bytes: new Uint8Array(0),
+      error: encoded.error ?? `خطا در کدگذاری فیلد «${descriptor.name}».`,
+    };
+  }
+
+  return { success: true, bytes: encoded.bytes };
+}
+
+/**
+ * Performs In-Place Binary Editing on an independent copy of the original DBF buffer.
+ * Only replaces the exact byte ranges of modified fields.
+ * All untouched fields, header bytes, delete flags, record order, and EOF/trailing bytes remain identical.
+ */
+function buildPatchedDbfBuffer(
+  doc,
+  changes
+) {
+  const errors = [];
+  const copy = new Uint8Array(doc.originalBuffer.length);
+  copy.set(doc.originalBuffer);
+
+  const allowPersian = doc.encoding === 'iran-system' && doc.encodingConfidence === 'verified';
+
+  for (const ch of changes) {
+    if (ch.fileRole !== doc.fileRole && ch.fileName !== doc.fileName) {
+      continue;
+    }
+    const rec = doc.records[ch.recordIndex];
+    if (!rec) {
+      errors.push(`رکورد شماره ${ch.recordIndex} یافت نشد.`);
+      continue;
+    }
+    const fieldMeta = rec.fields[ch.fieldName];
+    if (!fieldMeta) {
+      errors.push(`فیلد ${ch.fieldName} در رکورد ${ch.recordIndex} یافت نشد.`);
+      continue;
+    }
+
+    const encoded = encodeFieldValue(ch.newValue, fieldMeta.descriptor, allowPersian);
+    if (!encoded.success) {
+      errors.push(`رکورد ${ch.recordIndex + 1} (${fieldMeta.semantic.labelFa}): ${encoded.error}`);
+      continue;
+    }
+
+    if (encoded.bytes.length !== fieldMeta.descriptor.length) {
+      errors.push(
+        `عدم تطابق طول بایت در فیلد ${ch.fieldName}: انتظار ${fieldMeta.descriptor.length}، خروجی ${encoded.bytes.length}.`
+      );
+      continue;
+    }
+
+    const absStart = rec.absoluteOffset + fieldMeta.descriptor.recordOffset;
+    const absEnd = absStart + fieldMeta.descriptor.length;
+    if (absEnd > copy.length) {
+      errors.push(`محدوده بایتی فیلد ${ch.fieldName} خارج از اندازه فایل است.`);
+      continue;
+    }
+
+    copy.set(encoded.bytes, absStart);
+  }
+
+  if (errors.length > 0) {
+    return { success: false, errors };
+  }
+
+  return { success: true, buffer: copy, errors: [] };
+}
+
+// --- integrityChecker.mjs ---
+
+/**
+ * Verifies the output binary buffer against the original buffer and tracked changes:
+ * 1. Exact file size preserved
+ * 2. Re-parses without errors
+ * 3. Record count, header length, and record length preserved
+ * 4. Modified fields decode to expected new values
+ * 5. Every single differing byte between original and output is strictly inside an expected modified field range
+ */
+function verifyDbfIntegrity(
+  originalDoc,
+  outputBuffer,
+  expectedChanges
+) {
+  const errors = [];
+  const warnings = [];
+
+  if (outputBuffer.length !== originalDoc.originalBuffer.length) {
+    errors.push(
+      `طول فایل خروجی (${outputBuffer.length}) با طول فایل اصلی (${originalDoc.originalBuffer.length}) برابر نیست.`
+    );
+  }
+
+  let reparsed;
+  try {
+    reparsed = parseDbfBuffer(outputBuffer, originalDoc.fileName);
+  } catch (err) {
+    return {
+      valid: false,
+      errors: [`خطا در بازخوانی فایل خروجی: ${err instanceof Error ? err.message : String(err)}`],
+      warnings,
+      originalSize: originalDoc.originalBuffer.length,
+      outputSize: outputBuffer.length,
+      changedByteCount: 0,
+      changedRanges: [],
+      unexplainedDiffCount: 0,
+      reparsedRecordCount: 0,
+      reparsedHeaderLength: 0,
+      reparsedRecordLength: 0,
+    };
+  }
+
+  if (reparsed.header.recordCount !== originalDoc.header.recordCount) {
+    errors.push(
+      `تعداد رکوردها تغییر کرده است: اصلی ${originalDoc.header.recordCount}، خروجی ${reparsed.header.recordCount}.`
+    );
+  }
+  if (reparsed.header.headerLength !== originalDoc.header.headerLength) {
+    errors.push(
+      `طول هدر تغییر کرده است: اصلی ${originalDoc.header.headerLength}، خروجی ${reparsed.header.headerLength}.`
+    );
+  }
+  if (reparsed.header.recordLength !== originalDoc.header.recordLength) {
+    errors.push(
+      `طول رکورد تغییر کرده است: اصلی ${originalDoc.header.recordLength}، خروجی ${reparsed.header.recordLength}.`
+    );
+  }
+
+  // Build allowed byte ranges from expectedChanges
+  const allowedRanges = expectedChanges.map((ch) => ({
+    start: ch.absoluteOffset,
+    end: ch.absoluteOffset + ch.fieldLength,
+    recordIndex: ch.recordIndex,
+    fieldName: ch.fieldName,
+  }));
+
+  // Verify re-decoded values for all expected changes
+  for (const ch of expectedChanges) {
+    const repRec = reparsed.records[ch.recordIndex];
+    const repField = repRec?.fields[ch.fieldName];
+    if (!repField) {
+      errors.push(`فیلد اصلاح‌شده ${ch.fieldName} در رکورد ${ch.recordIndex + 1} یافت نشد.`);
+      continue;
+    }
+    const expectedNormalized = ch.newValue.trimEnd();
+    const actualNormalized = repField.decodedValue.trimEnd();
+    if (
+      repField.descriptor.type === 'N'
+        ? actualNormalized !== expectedNormalized.trim()
+        : actualNormalized !== expectedNormalized
+    ) {
+      warnings.push(
+        `مقدار بازخوانی‌شده فیلد ${ch.fieldLabel} در رکورد ${ch.recordIndex + 1} («${actualNormalized}») با مقدار ورودی («${expectedNormalized}») تفاوت جزئی دارد.`
+      );
+    }
+  }
+
+  // Byte-by-byte comparison
+  const minLen = Math.min(originalDoc.originalBuffer.length, outputBuffer.length);
+  let changedByteCount = 0;
+  let unexplainedDiffCount = 0;
+  const changedRangesMap = new Map();
+
+  for (let i = 0; i < minLen; i++) {
+    if (originalDoc.originalBuffer[i] !== outputBuffer[i]) {
+      changedByteCount++;
+      const matchedRange = allowedRanges.find((r) => i >= r.start && i < r.end);
+      if (matchedRange) {
+        const key = `${matchedRange.recordIndex}:${matchedRange.fieldName}`;
+        if (!changedRangesMap.has(key)) {
+          changedRangesMap.set(key, { ...matchedRange, explained: true });
+        }
+      } else {
+        unexplainedDiffCount++;
+        const key = `unexplained:${i}`;
+        changedRangesMap.set(key, {
+          start: i,
+          end: i + 1,
+          recordIndex: -1,
+          fieldName: `BYTE_${i}`,
+          explained: false,
+        });
+      }
+    }
+  }
+
+  if (unexplainedDiffCount > 0) {
+    errors.push(
+      `${unexplainedDiffCount} بایت خارج از محدوده فیلدهای تغییریافته تغییر کرده است! ذخیره متوقف شد.`
+    );
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+    originalSize: originalDoc.originalBuffer.length,
+    outputSize: outputBuffer.length,
+    changedByteCount,
+    changedRanges: Array.from(changedRangesMap.values()),
+    unexplainedDiffCount,
+    reparsedRecordCount: reparsed.header.recordCount,
+    reparsedHeaderLength: reparsed.header.headerLength,
+    reparsedRecordLength: reparsed.header.recordLength,
+  };
+}
+
+// --- dbfValidator.mjs ---
+
+function validateFieldValue(
+  recordIndex,
+  field,
+  value,
+  allowPersian
+) {
+  const issues = [];
+  const { descriptor, semantic } = field;
+  const trimmed = value.trim();
+
+  // 1. National Code check
+  if (semantic.isNationalCode) {
+    const ncResult = validateIranianNationalCode(trimmed);
+    if (!ncResult.valid) {
+      issues.push({
+        recordIndex,
+        fieldName: descriptor.name,
+        fieldLabel: semantic.labelFa,
+        severity: 'error',
+        message: ncResult.error ?? 'کد ملی نامعتبر است.',
+      });
+    }
+  }
+
+  // 2. Date structure check
+  if (semantic.isDate && trimmed !== '' && trimmed !== '0') {
+    const dateRes = isValidJalaliDateStructure(trimmed);
+    if (!dateRes.valid) {
+      issues.push({
+        recordIndex,
+        fieldName: descriptor.name,
+        fieldLabel: semantic.labelFa,
+        severity: 'error',
+        message: dateRes.error ?? 'ساختار تاریخ نامعتبر است.',
+      });
+    }
+  }
+
+  // 3. Numeric field checks
+  if (descriptor.type === 'N' || descriptor.type === 'F') {
+    if (trimmed !== '' && !/^-?\d+(\.\d+)?$/.test(trimmed)) {
+      issues.push({
+        recordIndex,
+        fieldName: descriptor.name,
+        fieldLabel: semantic.labelFa,
+        severity: 'error',
+        message: 'فیلد عددی فقط باید شامل ارقام انگلیسی (0-9) باشد.',
+      });
+    } else if (trimmed.length > descriptor.length) {
+      issues.push({
+        recordIndex,
+        fieldName: descriptor.name,
+        fieldLabel: semantic.labelFa,
+        severity: 'error',
+        message: `تعداد ارقام (${trimmed.length}) از ظرفیت مجاز (${descriptor.length}) بیشتر است.`,
+      });
+    }
+
+    if (descriptor.name === 'DSW_DD' && trimmed !== '') {
+      const days = Number(trimmed);
+      if (days < 0 || days > 31) {
+        issues.push({
+          recordIndex,
+          fieldName: descriptor.name,
+          fieldLabel: semantic.labelFa,
+          severity: 'warning',
+          message: 'تعداد روز کارکرد باید بین ۰ تا ۳۱ روز باشد.',
+        });
+      }
+    }
+  } else {
+    // Character field length & encoding check
+    let hasNonAscii = false;
+    for (let i = 0; i < value.length; i++) {
+      if (value.charCodeAt(i) >= 0x80) {
+        hasNonAscii = true;
+        break;
+      }
+    }
+    if (hasNonAscii && !allowPersian) {
+      issues.push({
+        recordIndex,
+        fieldName: descriptor.name,
+        fieldLabel: semantic.labelFa,
+        severity: 'error',
+        message: 'کدگذاری متن فارسی این فایل تأیید نشده و ویرایش فارسی مجاز نیست.',
+      });
+    } else {
+      const enc = encodeIranSystem(value, descriptor.length);
+      if (!enc.success) {
+        issues.push({
+          recordIndex,
+          fieldName: descriptor.name,
+          fieldLabel: semantic.labelFa,
+          severity: 'error',
+          message: enc.error ?? 'طول یا کاراکترهای واردشده مجاز نیستند.',
+        });
+      }
+    }
+  }
+
+  // 4. Computed totals warning (DSKKAR00)
+  if (semantic.isComputedWarning && field.isModified) {
+    issues.push({
+      recordIndex,
+      fieldName: descriptor.name,
+      fieldLabel: semantic.labelFa,
+      severity: 'warning',
+      message: 'این فیلد یک جمع محاسباتی است؛ تغییر دستی ممکن است با مجموع رکوردهای کارگران همخوانی نداشته باشد.',
+    });
+  }
+
+  return issues;
+}
+
+function validateDocument(doc) {
+  const all = [];
+  const allowPersian = doc.encoding === 'iran-system' && doc.encodingConfidence === 'verified';
+
+  for (const rec of doc.records) {
+    for (const fname of rec.fieldOrder) {
+      const f = rec.fields[fname];
+      const val = f.isModified && f.modifiedValue !== null ? f.modifiedValue : f.decodedValue;
+      const issues = validateFieldValue(rec.recordIndex, f, val, allowPersian);
+      all.push(...issues);
+    }
+  }
+  return all;
+}
+
+// --- changeTracker.mjs ---
+
+function applyFieldChange(
+  doc,
+  recordIndex,
+  fieldName,
+  newValue,
+  existingChanges
+) {
+  const rec = doc.records[recordIndex];
+  const field = rec?.fields[fieldName];
+  if (!rec || !field) {
+    return { updatedDoc: doc, updatedChanges: existingChanges };
+  }
+
+  const normalizedOriginal =
+    field.descriptor.type === 'N' ? field.decodedValue.trim() : field.decodedValue.trimEnd();
+  const normalizedNew =
+    field.descriptor.type === 'N' ? newValue.trim() : newValue.trimEnd();
+
+  // If reverted back to original value, remove change entry
+  if (normalizedNew === normalizedOriginal) {
+    const nextChanges = existingChanges.filter(
+      (c) => !(c.fileName === doc.fileName && c.recordIndex === recordIndex && c.fieldName === fieldName)
+    );
+    const updatedRecords = doc.records.map((r, idx) =>
+      idx !== recordIndex
+        ? r
+        : {
+            ...r,
+            fields: {
+              ...r.fields,
+              [fieldName]: {
+                ...field,
+                modifiedValue: null,
+                isModified: false,
+              },
+            },
+          }
+    );
+    return {
+      updatedDoc: { ...doc, records: updatedRecords },
+      updatedChanges: nextChanges,
+    };
+  }
+
+  const allowPersian = doc.encoding === 'iran-system' && doc.encodingConfidence === 'verified';
+  const encoded = encodeFieldValue(newValue, field.descriptor, allowPersian);
+
+  const entry = {
+    id: `${doc.fileName}:${recordIndex}:${fieldName}`,
+    fileRole: doc.fileRole,
+    fileName: doc.fileName,
+    recordIndex,
+    fieldName,
+    fieldLabel: field.semantic.labelFa,
+    absoluteOffset: rec.absoluteOffset + field.descriptor.recordOffset,
+    fieldLength: field.descriptor.length,
+    originalRawBytes: field.originalRawBytes,
+    originalDecodedValue: field.decodedValue,
+    newValue,
+    newEncodedBytes: encoded.success ? encoded.bytes : new Uint8Array(0),
+    status: encoded.success ? 'pending' : 'invalid',
+    timestamp: Date.now(),
+  };
+
+  const filtered = existingChanges.filter((c) => c.id !== entry.id);
+  const nextChanges = [...filtered, entry];
+
+  const updatedRecords = doc.records.map((r, idx) =>
+    idx !== recordIndex
+      ? r
+      : {
+          ...r,
+          fields: {
+            ...r.fields,
+            [fieldName]: {
+              ...field,
+              modifiedValue: newValue,
+              isModified: true,
+            },
+          },
+        }
+  );
+
+  return {
+    updatedDoc: { ...doc, records: updatedRecords },
+    updatedChanges: nextChanges,
+  };
+}
+
+// --- exportService.mjs ---
+
+
+function prepareSafeDbfExport(
+  doc,
+  allChanges
+) {
+  const docChanges = allChanges.filter((c) => c.fileName === doc.fileName);
+  const patched = buildPatchedDbfBuffer(doc, docChanges);
+  if (!patched.success || !patched.buffer) {
+    return { success: false, errors: patched.errors };
+  }
+
+  const integrity = verifyDbfIntegrity(doc, patched.buffer, docChanges);
+  if (!integrity.valid) {
+    return {
+      success: false,
+      integrity,
+      errors: integrity.errors,
+    };
+  }
+
+  return {
+    success: true,
+    buffer: patched.buffer,
+    integrity,
+    errors: [],
+  };
+}
+
+function triggerBrowserDownload(bytes, fileName, mimeType = 'application/octet-stream') {
+  const blob = new Blob([bytes], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function exportCombinedZip(
+  items,
+  zipName = 'Tamin_Diskette_Edited.zip'
+) {
+  const zipBytes = createZipArchive(items.map((it) => ({ fileName: it.fileName, data: it.buffer })));
+  triggerBrowserDownload(zipBytes, zipName, 'application/zip');
+}
+
+
+// --- App State & UI Controller ---
+const state = {
+  tab: 'home',
+  worDoc: null,
+  karDoc: null,
+  changes: [],
+  selectedWorker: null,
+  search: '',
+  filterMode: 'all',
+  error: null,
+  lastReport: null,
+};
+
+function toggleDark() {
+  document.documentElement.classList.toggle('dark');
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function handleFileInput(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  input.value = '';
+  state.error = null;
+  try {
+    const buf = await file.arrayBuffer();
+    const doc = parseDbfBuffer(buf, file.name);
+    state.changes = state.changes.filter(c => c.fileName !== doc.fileName);
+    if (doc.fileRole === 'DSKKAR00') state.karDoc = doc;
+    else state.worDoc = doc;
+    state.lastReport = null;
+  } catch (e) {
+    state.error = e.message || String(e);
+  }
+  render();
+}
+
+function onFieldEdit(target, recIdx, fieldName, newValue) {
+  const doc = target === 'wor' ? state.worDoc : state.karDoc;
+  if (!doc) return;
+  const res = applyFieldChange(doc, recIdx, fieldName, newValue, state.changes);
+  if (target === 'wor') state.worDoc = res.updatedDoc;
+  else state.karDoc = res.updatedDoc;
+  state.changes = res.updatedChanges;
+  render();
+}
+
+function revertChange(id) {
+  const c = state.changes.find(x => x.id === id);
+  if (!c) return;
+  const target = state.worDoc && c.fileName === state.worDoc.fileName ? 'wor' : 'kar';
+  onFieldEdit(target, c.recordIndex, c.fieldName, c.originalDecodedValue);
+}
+
+function saveSingle(which) {
+  const doc = which === 'wor' ? state.worDoc : state.karDoc;
+  if (!doc) return;
+  const res = prepareSafeDbfExport(doc, state.changes);
+  if (!res.success) {
+    state.error = res.errors.join(' | ');
+    render();
+    return;
+  }
+  state.lastReport = { fileName: doc.fileName, report: res.integrity };
+  triggerBrowserDownload(res.buffer, doc.fileName);
+  render();
+}
+
+function saveZip() {
+  const items = [];
+  for (const doc of [state.worDoc, state.karDoc]) {
+    if (!doc) continue;
+    const res = prepareSafeDbfExport(doc, state.changes);
+    if (!res.success) {
+      state.error = res.errors.join(' | ');
+      render();
+      return;
+    }
+    items.push({ fileName: doc.fileName, buffer: res.buffer });
+  }
+  if (items.length) exportCombinedZip(items);
+}
+
+function renderNav() {
+  const tabs = [
+    ['home', 'صفحه اصلی'],
+    ['workers', 'بیمه‌شدگان' + (state.worDoc ? ` (${state.worDoc.header.recordCount})` : '')],
+    ['workshop', 'کارگاه'],
+    ['review', `تغییرات (${state.changes.length})`],
+    ['tests', 'تست Encoding'],
+  ];
+  document.getElementById('nav').innerHTML = tabs.map(([id, lbl]) =>
+    `<button class="tab-btn ${state.tab === id ? 'active' : ''}" onclick="state.tab='${id}'; if('${id}' !== 'workers') state.selectedWorker=null; render();">${lbl}</button>`
+  ).join('');
+}
+
+function renderHome() {
+  const renderCard = (title, expected, doc, targetTab) => {
+    const count = doc ? state.changes.filter(c => c.fileName === doc.fileName).length : 0;
+    const issues = doc ? validateDocument(doc) : [];
+    const errs = issues.filter(i => i.severity === 'error').length;
+    return `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div><strong>${title}</strong><div class="mono" style="font-size:11px;color:var(--muted)">${doc ? escapeHtml(doc.fileName) : expected}</div></div>
+          <span class="badge ${doc ? 'badge-ok' : ''}">${doc ? 'بارگذاری‌شده' : 'بارگذاری‌نشده'}</span>
+        </div>
+        ${doc ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;background:var(--bg);padding:10px;border-radius:10px;margin-bottom:12px">
+            <div>رکوردها: <b>${doc.header.recordCount}</b> (${doc.fields.length} فیلد)</div>
+            <div>حجم: <b>${formatBytesFa(doc.header.totalFileSize)}</b></div>
+            <div>سلامت: <b style="color:${errs===0 && doc.encodingConfidence==='verified' ? 'var(--ok)' : 'var(--warn)'}">${doc.encodingConfidence==='verified' ? (errs===0 ? 'سالم (Iran System)' : errs+' خطا') : 'هشدار Encoding'}</b></div>
+            <div>تغییرات: <b>${count} مورد</b></div>
+          </div>
+        ` : `<p style="font-size:13px;color:var(--muted)">فایل <span class="mono">${expected}</span> را انتخاب کنید.</p>`}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label class="btn btn-primary" style="flex:1;text-align:center">
+            ${doc ? 'بارگذاری مجدد' : 'انتخاب ' + expected}
+            <input type="file" accept=".dbf,.DBF" style="display:none" onchange="handleFileInput(this)" />
+          </label>
+          ${doc ? `<button class="btn btn-ghost" style="flex:1" onclick="state.tab='${targetTab}';render()">مشاهده و ویرایش</button>` : ''}
+        </div>
+      </div>
+    `;
+  };
+  return `
+    <div class="msg msg-ok" style="margin-bottom:14px">تمامی پردازش‌ها کاملاً آفلاین و درون مرورگر انجام می‌شود. هیچ داده‌ای به سرور ارسال نمی‌شود.</div>
+    <div class="grid-2">
+      ${renderCard('اطلاعات بیمه‌شدگان', 'DSKWOR00.dbf', state.worDoc, 'workers')}
+      ${renderCard('اطلاعات کارگاه', 'DSKKAR00.dbf', state.karDoc, 'workshop')}
+    </div>
+    ${(state.worDoc || state.karDoc) ? `
+      <div class="card" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${state.changes.length ? `<button class="btn btn-warn" onclick="state.tab='review';render()">بررسی تغییرات (${state.changes.length})</button>` : ''}
+          ${(state.worDoc && state.karDoc) ? `<button class="btn btn-ok" onclick="saveZip()">دریافت ZIP هر دو فایل</button>` : ''}
+        </div>
+        <button class="btn btn-danger" onclick="state.worDoc=null;state.karDoc=null;state.changes=[];state.lastReport=null;render()">پاکسازی</button>
+      </div>
+    ` : ''}
+  `;
+}
+
+function renderWorkers() {
+  if (!state.worDoc) return `<div class="card">ابتدا فایل DSKWOR00.dbf را از صفحه اصلی بارگذاری کنید.</div>`;
+  const doc = state.worDoc;
+  if (state.selectedWorker !== null) return renderWorkerEditor(doc, state.selectedWorker);
+
+  const getV = (idx, fn) => {
+    const f = doc.records[idx].fields[fn];
+    return f ? (f.isModified && f.modifiedValue !== null ? f.modifiedValue : f.decodedValue) : '';
+  };
+  const q = state.search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const filtered = doc.records.filter(r => {
+    const isMod = r.fieldOrder.some(fn => r.fields[fn].isModified);
+    if (state.filterMode === 'modified' && !isMod) return false;
+    if (!q.length) return true;
+    const hay = [getV(r.recordIndex,'PER_NATCOD'), getV(r.recordIndex,'DSW_FNAME'), getV(r.recordIndex,'DSW_LNAME'), getV(r.recordIndex,'DSW_DNAME')].join(' ').toLowerCase();
+    return q.every(t => hay.includes(t));
+  });
+
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <strong>فهرست بیمه‌شدگان (${filtered.length} از ${doc.records.length})</strong>
+        <div style="display:flex;gap:6px">
+          <button class="btn ${state.filterMode==='all'?'btn-primary':'btn-ghost'}" style="padding:5px 10px;font-size:12px" onclick="state.filterMode='all';render()">همه</button>
+          <button class="btn ${state.filterMode==='modified'?'btn-primary':'btn-ghost'}" style="padding:5px 10px;font-size:12px" onclick="state.filterMode='modified';render()">تغییریافته</button>
+        </div>
+      </div>
+      <input class="input" type="search" placeholder="جستجو با کد ملی، نام یا نام خانوادگی..." value="${escapeHtml(state.search)}" oninput="state.search=this.value;render()" />
+    </div>
+    <div class="mobile-only">
+      ${filtered.map(r => {
+        const i = r.recordIndex;
+        const isMod = r.fieldOrder.some(fn => r.fields[fn].isModified);
+        return `<div class="card" style="cursor:pointer;${isMod?'border-color:var(--primary)':''}" onclick="state.selectedWorker=${i};render()">
+          <div style="display:flex;justify-content:space-between"><b>${i+1}. ${escapeHtml(getV(i,'DSW_FNAME'))} ${escapeHtml(getV(i,'DSW_LNAME'))}</b>${isMod?'<span class="badge badge-warn">ویرایش‌شده</span>':''}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px">کد ملی: <span class="mono">${escapeHtml(getV(i,'PER_NATCOD'))}</span> | کارکرد: ${escapeHtml(getV(i,'DSW_DD'))} روز | دستمزد: ${formatNumberFa(getV(i,'DSW_MAH'))}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="desktop-only card" style="overflow-x:auto">
+      <table>
+        <thead><tr><th>ردیف</th><th>کد ملی</th><th>نام</th><th>نام خانوادگی</th><th>نام پدر</th><th>شماره شناسنامه</th><th>شغل</th><th>کارکرد</th><th>دستمزد ماهانه</th></tr></thead>
+        <tbody>
+          ${filtered.map(r => {
+            const i = r.recordIndex;
+            return `<tr onclick="state.selectedWorker=${i};render()">
+              <td>${i+1}</td><td class="mono">${escapeHtml(getV(i,'PER_NATCOD'))}</td>
+              <td><b>${escapeHtml(getV(i,'DSW_FNAME'))}</b></td><td><b>${escapeHtml(getV(i,'DSW_LNAME'))}</b></td>
+              <td>${escapeHtml(getV(i,'DSW_DNAME'))}</td><td class="mono">${escapeHtml(getV(i,'DSW_IDNO'))}</td>
+              <td>${escapeHtml(getV(i,'DSW_OCP'))}</td><td>${escapeHtml(getV(i,'DSW_DD'))}</td>
+              <td class="mono">${formatNumberFa(getV(i,'DSW_MAH'))}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderFieldInput(target, doc, recIdx, f) {
+  const allowPersian = doc.encoding === 'iran-system' && doc.encodingConfidence === 'verified';
+  const val = f.isModified && f.modifiedValue !== null ? f.modifiedValue : f.decodedValue;
+  const isNum = f.descriptor.type === 'N' || f.descriptor.type === 'F';
+  const issues = validateFieldValue(recIdx, f, val, allowPersian);
+  const encLen = isNum ? val.trim().length : encodeIranSystem(val).unpaddedLength;
+  return `
+    <div class="field-box ${f.isModified ? 'mod' : ''}">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+        <b>${escapeHtml(f.semantic.labelFa)} <span class="mono" style="color:var(--muted)">(${f.descriptor.name})</span></b>
+        <span class="mono" style="color:var(--muted)">${encLen}/${f.descriptor.length}B</span>
+      </div>
+      <input class="input" dir="${isNum || f.semantic.isIdentifier || f.semantic.isDate ? 'ltr' : 'rtl'}"
+        value="${escapeHtml(val)}" ${(!isNum && !allowPersian) ? 'disabled' : ''}
+        onchange="onFieldEdit('${target}', ${recIdx}, '${f.descriptor.name}', this.value)" />
+      ${f.isModified ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;margin-top:6px">
+        <span>قبلی: <b class="mono">${escapeHtml(f.decodedValue)}</b></span>
+        <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="onFieldEdit('${target}', ${recIdx}, '${f.descriptor.name}', decodeURIComponent('${encodeURIComponent(f.decodedValue)}'))">بازگردانی</button>
+      </div>` : ''}
+      ${issues.map(iss => `<div class="msg ${iss.severity==='error'?'msg-err':'msg-warn'}">${escapeHtml(iss.message)}</div>`).join('')}
+    </div>
+  `;
+}
+
+function renderWorkerEditor(doc, idx) {
+  const rec = doc.records[idx];
+  const groups = [['identity','اطلاعات هویتی'], ['job','اطلاعات شغلی'], ['wage','اطلاعات دستمزد و کارکرد'], ['other','سایر']];
+  return `
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div><strong>ویرایش ردیف ${idx+1}: ${escapeHtml(rec.fields.DSW_FNAME?.decodedValue)} ${escapeHtml(rec.fields.DSW_LNAME?.decodedValue)}</strong></div>
+      <button class="btn btn-ghost" onclick="state.selectedWorker=null;render()">بازگشت به فهرست</button>
+    </div>
+    ${groups.map(([g, title]) => {
+      const fs = rec.fieldOrder.map(fn => rec.fields[fn]).filter(f => f.semantic.group === g);
+      if (!fs.length) return '';
+      return `<div class="card"><h3 style="margin-top:0;font-size:15px">${title}</h3><div class="grid-2">${fs.map(f => renderFieldInput('wor', doc, idx, f)).join('')}</div></div>`;
+    }).join('')}
+  `;
+}
+
+function renderWorkshop() {
+  if (!state.karDoc) return `<div class="card">ابتدا فایل DSKKAR00.dbf را از صفحه اصلی بارگذاری کنید.</div>`;
+  const doc = state.karDoc;
+  const rec = doc.records[0];
+  const info = rec.fieldOrder.map(fn => rec.fields[fn]).filter(f => f.semantic.group !== 'workshop_totals');
+  const totals = rec.fieldOrder.map(fn => rec.fields[fn]).filter(f => f.semantic.group === 'workshop_totals');
+  return `
+    <div class="card"><strong>اطلاعات کارگاه (${escapeHtml(rec.fields.DSK_NAME?.decodedValue)})</strong></div>
+    <div class="card"><h3 style="margin-top:0;font-size:15px">مشخصات کارگاه</h3><div class="grid-2">${info.map(f => renderFieldInput('kar', doc, 0, f)).join('')}</div></div>
+    <div class="card"><h3 style="margin-top:0;font-size:15px">جمع‌های محاسباتی لیست</h3>
+      <div class="msg msg-warn" style="margin-bottom:10px">تغییر دستی فیلدهای جمع ممکن است با مجموع رکوردهای کارگران همخوانی نداشته باشد.</div>
+      <div class="grid-2">${totals.map(f => renderFieldInput('kar', doc, 0, f)).join('')}</div>
+    </div>
+  `;
+}
+
+function renderReview() {
+  const hasInvalid = state.changes.some(c => c.status === 'invalid');
+  return `
+    <div class="card">
+      <strong>بررسی نهایی و ذخیره امن (${state.changes.length} تغییر)</strong>
+      ${state.changes.length === 0 ? `<p style="font-size:13px;color:var(--muted)">تغییری ثبت نشده است. خروجی فعلی بایت‌به‌بایت با فایل اصلی یکسان خواهد بود.</p>` :
+        state.changes.map(c => `
+          <div class="field-box" style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="font-size:13px">
+              <b>[${escapeHtml(c.fileName)}] ردیف ${c.recordIndex+1} — ${escapeHtml(c.fieldLabel)}</b>
+              <div style="font-size:12px">قبلی: <b style="color:var(--danger)">${escapeHtml(c.originalDecodedValue)}</b> ← جدید: <b style="color:var(--ok)">${escapeHtml(c.newValue)}</b></div>
+            </div>
+            <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="revertChange('${c.id}')">بازگردانی</button>
+          </div>
+        `).join('')}
+    </div>
+    <div class="card" style="display:flex;gap:10px;flex-wrap:wrap">
+      ${state.worDoc ? `<button class="btn btn-primary" ${hasInvalid?'disabled':''} onclick="saveSingle('wor')">ذخیره ${escapeHtml(state.worDoc.fileName)}</button>` : ''}
+      ${state.karDoc ? `<button class="btn btn-primary" ${hasInvalid?'disabled':''} onclick="saveSingle('kar')">ذخیره ${escapeHtml(state.karDoc.fileName)}</button>` : ''}
+      ${(state.worDoc && state.karDoc) ? `<button class="btn btn-ok" ${hasInvalid?'disabled':''} onclick="saveZip()">دریافت ZIP هر دو فایل</button>` : ''}
+    </div>
+    ${state.lastReport ? `<div class="msg msg-ok"><b>گزارش کنترل سلامت (${escapeHtml(state.lastReport.fileName)}):</b> اندازه ${state.lastReport.report.originalSize} ← ${state.lastReport.report.outputSize} بایت | رکوردها: ${state.lastReport.report.reparsedRecordCount} | بایت‌های تغییریافته: ${state.lastReport.report.changedByteCount} | تغییرات غیرمجاز: ${state.lastReport.report.unexplainedDiffCount}</div>` : ''}
+  `;
+}
+
+function renderTests() {
+  const results = runEncodingSelfTests();
+  return `<div class="card"><strong>تست خودکار Iran System Encoding</strong>
+    ${results.map(t => `<div class="msg ${t.passed?'msg-ok':'msg-err'}"><b>${escapeHtml(t.name)}</b>: ${escapeHtml(t.actual)} (${t.passed?'موفق':'ناموفق'})</div>`).join('')}
+  </div>`;
+}
+
+function render() {
+  renderNav();
+  const errHtml = state.error ? `<div class="msg msg-err" style="margin-bottom:12px">${escapeHtml(state.error)}</div>` : '';
+  let body = '';
+  if (state.tab === 'home') body = renderHome();
+  else if (state.tab === 'workers') body = renderWorkers();
+  else if (state.tab === 'workshop') body = renderWorkshop();
+  else if (state.tab === 'review') body = renderReview();
+  else body = renderTests();
+  document.getElementById('app').innerHTML = errHtml + body;
+}
+
+render();
+</script>
+</body>
+</html>
