@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="theme-color" content="#0f4c81" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="./icon.svg" />
 <title>ویرایشگر دیسکت تأمین اجتماعی</title>
 <style>
 :root {
@@ -65,7 +68,10 @@ tr:hover td { background: var(--accent-bg); cursor: pointer; }
         <h1>ویرایشگر دیسکت تأمین اجتماعی</h1>
         <small>Social Security Diskette Editor — آفلاین، باینری و بدون ارسال داده</small>
       </div>
-      <button class="tab-btn" style="background:rgba(255,255,255,.15)" onclick="toggleDark()">تغییر تم</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button id="pwaInstallBtn" class="tab-btn" style="display:none;background:#047857;color:#fff" onclick="installPwa()">نصب اپ</button>
+        <button class="tab-btn" style="background:rgba(255,255,255,.15)" onclick="toggleDark()">تغییر تم</button>
+      </div>
     </div>
     <nav id="nav"></nav>
   </div>
@@ -2042,6 +2048,27 @@ function render() {
   document.getElementById('app').innerHTML = errHtml + body;
 }
 
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('pwaInstallBtn');
+  if (btn) btn.style.display = 'inline-block';
+});
+async function installPwa() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  const btn = document.getElementById('pwaInstallBtn');
+  if (btn) btn.style.display = 'none';
+}
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
 render();
 </script>
 </body>
