@@ -1,0 +1,20 @@
+{
+  "name": "ویرایشگر دیسکت تأمین اجتماعی",
+  "short_name": "دیسکت بیمه",
+  "description": "مشاهده، جستجو، اعتبارسنجی و ویرایش باینری فایل‌های DBF دیسکت تأمین اجتماعی ایران (آفلاین)",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0f4c81",
+  "dir": "rtl",
+  "lang": "fa",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
